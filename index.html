@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>&#20945;&#21313;&#28040;&#38500;&#26827;&#30424;</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f3ea;
+      --ink: #24211c;
+      --muted: #746d61;
+      --line: #d8d0c1;
+      --panel: #fffdf7;
+      --accent: #1f7a6d;
+      --accent-2: #cc5a37;
+      --good: #1f8a4c;
+      --danger: #b83d2d;
+      --cell: clamp(24px, 4.8vw, 42px);
+      --gap: 4px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+      color: var(--ink);
+      background:
+        linear-gradient(135deg, rgba(31, 122, 109, .08), transparent 32%),
+        linear-gradient(315deg, rgba(204, 90, 55, .10), transparent 34%),
+        var(--bg);
+    }
+
+    .app {
+      width: min(1180px, calc(100vw - 24px));
+      margin: 0 auto;
+      padding: 18px 0 24px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 300px;
+      gap: 18px;
+      align-items: start;
+    }
+
+    header {
+      grid-column: 1 / -1;
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 12px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 12px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(24px, 4vw, 42px);
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    .sub {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(76px, 1fr));
+      gap: 8px;
+      min-width: min(520px, 100%);
+    }
+
+    .stat, .side {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 14px 35px rgba(57, 44, 25, .08);
+    }
+
+    .stat {
+      padding: 10px 12px;
+      min-height: 66px;
+    }
+
+    .label {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 5px;
+    }
+
+    .value {
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .time-low .value {
+      color: var(--danger);
+    }
+
+    .board-wrap {
+      position: relative;
+      width: fit-content;
+      max-width: 100%;
+      touch-action: none;
+      user-select: none;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(10, var(--cell));
+      grid-template-rows: repeat(16, var(--cell));
+      gap: var(--gap);
+      padding: 8px;
+      background: rgba(255, 253, 247, .82);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 18px 45px rgba(57, 44, 25, .12);
+    }
+
+    .board.locked {
+      pointer-events: none;
+      filter: grayscale(.25);
+    }
+
+    .cell {
+      display: grid;
+      place-items: center;
+      width: var(--cell);
+      height: var(--cell);
+      border: 1px solid #cfc5b3;
+      border-radius: 6px;
+      background: #fffaf0;
+      color: #2d2922;
+      font-size: clamp(15px, 3vw, 22px);
+      font-weight: 800;
+      line-height: 1;
+      transition: transform .12s ease, background .12s ease, opacity .18s ease;
+    }
+
+    .cell.selected {
+      background: #d7efe7;
+      border-color: var(--accent);
+      transform: scale(.95);
+    }
+
+    .cell.cleared {
+      opacity: .18;
+      background: #ece6da;
+      color: transparent;
+      transform: scale(.86);
+    }
+
+    .selection-box {
+      position: absolute;
+      border: 2px solid var(--accent-2);
+      background: rgba(204, 90, 55, .12);
+      border-radius: 6px;
+      pointer-events: none;
+      display: none;
+    }
+
+    .side {
+      padding: 14px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    button, input {
+      font: inherit;
+      border-radius: 7px;
+    }
+
+    button {
+      min-height: 42px;
+      border: 0;
+      background: var(--accent);
+      color: white;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: #e9e1d3;
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: .55;
+    }
+
+    input {
+      width: 100%;
+      min-height: 42px;
+      border: 1px solid var(--line);
+      background: #fffaf0;
+      padding: 0 10px;
+    }
+
+    .message {
+      min-height: 42px;
+      padding: 10px;
+      border-radius: 7px;
+      color: var(--muted);
+      background: #f3eee4;
+      font-size: 14px;
+    }
+
+    .message.good {
+      color: var(--good);
+      background: #e9f5ee;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+
+    ol {
+      margin: 0;
+      padding-left: 28px;
+      display: grid;
+      gap: 8px;
+    }
+
+    li {
+      padding: 8px 0;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+    }
+
+    li strong {
+      color: var(--ink);
+    }
+
+    @media (max-width: 860px) {
+      .app { grid-template-columns: 1fr; }
+      header {
+        align-items: stretch;
+        flex-direction: column;
+      }
+      .stats { min-width: 0; }
+      .board-wrap { margin: 0 auto; }
+    }
+
+    @media (max-width: 520px) {
+      .app { width: min(100vw - 12px, 1180px); }
+      .stats { grid-template-columns: 1fr 1fr; }
+      .stat { padding: 8px; }
+      .value { font-size: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <div>
+        <h1>&#20945;&#21313;&#28040;&#38500;&#26827;&#30424;</h1>
+        <p class="sub">&#25302;&#25341;&#26694;&#36873;&#25968;&#23383;&#65292;&#24635;&#21644;&#27491;&#22909;&#20026; 10 &#23601;&#28040;&#38500;&#65307;&#27599;&#28040;&#25481; 1 &#26684;&#24471; 1 &#20998;&#12290;</p>
+      </div>
+      <section class="stats" aria-label="&#28216;&#25103;&#25968;&#25454;">
+        <div class="stat"><span class="label">&#24403;&#21069;&#31215;&#20998;</span><span class="value" id="score">0</span></div>
+        <div class="stat" id="timerStat"><span class="label">&#21097;&#20313;&#26102;&#38388;</span><span class="value" id="timer">120</span></div>
+        <div class="stat"><span class="label">&#21097;&#20313;&#26684;&#23376;</span><span class="value" id="left">160</span></div>
+        <div class="stat"><span class="label">&#26694;&#36873;&#24635;&#21644;</span><span class="value" id="sum">0</span></div>
+      </section>
+    </header>
+
+    <section class="board-wrap" id="boardWrap" aria-label="&#25968;&#23383;&#26827;&#30424;">
+      <div class="board" id="board"></div>
+      <div class="selection-box" id="selectionBox"></div>
+    </section>
+
+    <aside class="side">
+      <div>
+        <h2>&#31215;&#20998;&#25490;&#34892;&#27036;</h2>
+        <p class="sub">120 &#31186;&#21040;&#26102;&#21518;&#21487;&#20445;&#23384;&#25104;&#32489;&#65292;&#25490;&#34892;&#27036;&#25353;&#31215;&#20998;&#20174;&#39640;&#21040;&#20302;&#25490;&#24207;&#12290;</p>
+      </div>
+      <input id="playerName" maxlength="12" placeholder="&#36755;&#20837;&#21517;&#23383;">
+      <div class="actions">
+        <button id="saveScore">&#20445;&#23384;&#25104;&#32489;</button>
+        <button id="newGame" class="secondary">&#26032;&#24320;&#19968;&#23616;</button>
+      </div>
+      <div class="message" id="message">&#26694;&#36873;&#21306;&#22495;&#20250;&#23454;&#26102;&#26174;&#31034;&#24635;&#21644;&#12290;</div>
+      <ol id="leaderboard"></ol>
+    </aside>
+  </main>
+
+  <script>
+    const rows = 16;
+    const cols = 10;
+    const gameSeconds = 120;
+    const board = document.querySelector("#board");
+    const boardWrap = document.querySelector("#boardWrap");
+    const box = document.querySelector("#selectionBox");
+    const scoreEl = document.querySelector("#score");
+    const timerEl = document.querySelector("#timer");
+    const timerStat = document.querySelector("#timerStat");
+    const leftEl = document.querySelector("#left");
+    const sumEl = document.querySelector("#sum");
+    const msg = document.querySelector("#message");
+    const leaderboardEl = document.querySelector("#leaderboard");
+    const nameInput = document.querySelector("#playerName");
+    const saveBtn = document.querySelector("#saveScore");
+    const storeKey = "ten-grid-leaderboard";
+
+    let cells = [];
+    let score = 0;
+    let timeLeft = gameSeconds;
+    let timerId = null;
+    let gameOver = false;
+    let dragging = false;
+    let start = null;
+    let selected = [];
+
+    const text = {
+      ready: "\u6846\u9009\u533a\u57df\u4f1a\u5b9e\u65f6\u663e\u793a\u603b\u548c\u3002",
+      over: "\u65f6\u95f4\u5230\uff01\u8f93\u5165\u540d\u5b57\u540e\u4fdd\u5b58\u6210\u7ee9\u3002",
+      saved: "\u6210\u7ee9\u5df2\u7ecf\u6309\u79ef\u5206\u52a0\u5165\u6392\u884c\u699c\u3002",
+      player: "\u73a9\u5bb6",
+      noScores: "\u8fd8\u6ca1\u6709\u6210\u7ee9"
+    };
+
+    function randDigit() {
+      return Math.floor(Math.random() * 9) + 1;
+    }
+
+    function startGame() {
+      clearInterval(timerId);
+      score = 0;
+      timeLeft = gameSeconds;
+      gameOver = false;
+      selected = [];
+      start = null;
+      board.classList.remove("locked");
+      saveBtn.disabled = false;
+      timerStat.classList.remove("time-low");
+      cells = Array.from({ length: rows * cols }, (_, index) => ({
+        index,
+        row: Math.floor(index / cols),
+        col: index % cols,
+        value: randDigit(),
+        cleared: false
+      }));
+      renderBoard();
+      updateStats(0);
+      setMessage(text.ready);
+      timerId = setInterval(tickTimer, 1000);
+    }
+
+    function tickTimer() {
+      timeLeft -= 1;
+      updateStats(Number(sumEl.textContent) || 0);
+      timerStat.classList.toggle("time-low", timeLeft <= 10);
+      if (timeLeft <= 0) endGame();
+    }
+
+    function endGame() {
+      clearInterval(timerId);
+      timeLeft = 0;
+      gameOver = true;
+      dragging = false;
+      box.style.display = "none";
+      document.querySelectorAll(".cell.selected").forEach((el) => el.classList.remove("selected"));
+      board.classList.add("locked");
+      updateStats(0);
+      setMessage(text.over);
+    }
+
+    function renderBoard() {
+      board.innerHTML = "";
+      cells.forEach((cell) => {
+        const tile = document.createElement("div");
+        tile.className = "cell";
+        tile.dataset.index = cell.index;
+        tile.textContent = cell.value;
+        board.appendChild(tile);
+      });
+    }
+
+    function updateStats(sum) {
+      scoreEl.textContent = score;
+      timerEl.textContent = Math.max(0, timeLeft);
+      leftEl.textContent = cells.filter((cell) => !cell.cleared).length;
+      sumEl.textContent = sum;
+    }
+
+    function setMessage(message, good = false) {
+      msg.textContent = message;
+      msg.classList.toggle("good", good);
+    }
+
+    function pointToCell(event) {
+      const el = document.elementFromPoint(event.clientX, event.clientY);
+      const cellEl = el && el.closest(".cell");
+      if (!cellEl || !board.contains(cellEl)) return null;
+      return cells[Number(cellEl.dataset.index)];
+    }
+
+    function drawSelection(event) {
+      const wrapRect = boardWrap.getBoundingClientRect();
+      const x1 = Math.min(start.x, event.clientX) - wrapRect.left;
+      const y1 = Math.min(start.y, event.clientY) - wrapRect.top;
+      const x2 = Math.max(start.x, event.clientX) - wrapRect.left;
+      const y2 = Math.max(start.y, event.clientY) - wrapRect.top;
+      box.style.display = "block";
+      box.style.left = `${x1}px`;
+      box.style.top = `${y1}px`;
+      box.style.width = `${Math.max(4, x2 - x1)}px`;
+      box.style.height = `${Math.max(4, y2 - y1)}px`;
+    }
+
+    function selectRectangle(endCell) {
+      if (!start || !endCell) return;
+      const minRow = Math.min(start.cell.row, endCell.row);
+      const maxRow = Math.max(start.cell.row, endCell.row);
+      const minCol = Math.min(start.cell.col, endCell.col);
+      const maxCol = Math.max(start.cell.col, endCell.col);
+
+      selected = cells.filter((cell) =>
+        !cell.cleared &&
+        cell.row >= minRow &&
+        cell.row <= maxRow &&
+        cell.col >= minCol &&
+        cell.col <= maxCol
+      );
+
+      document.querySelectorAll(".cell.selected").forEach((el) => el.classList.remove("selected"));
+      selected.forEach((cell) => board.children[cell.index].classList.add("selected"));
+      updateStats(selected.reduce((total, cell) => total + cell.value, 0));
+    }
+
+    function finishSelection() {
+      if (!dragging) return;
+      dragging = false;
+      box.style.display = "none";
+      const sum = selected.reduce((total, cell) => total + cell.value, 0);
+
+      if (selected.length && sum === 10) {
+        selected.forEach((cell) => {
+          cell.cleared = true;
+          const el = board.children[cell.index];
+          el.classList.remove("selected");
+          el.classList.add("cleared");
+          el.textContent = "";
+        });
+        score += selected.length;
+        setMessage(`\u6210\u529f\u6d88\u9664 ${selected.length} \u683c\uff0c+${selected.length} \u5206\u3002`, true);
+      } else if (selected.length) {
+        document.querySelectorAll(".cell.selected").forEach((el) => el.classList.remove("selected"));
+        setMessage(`\u8fd9\u6b21\u603b\u548c\u662f ${sum}\uff0c\u8fd8\u5dee\u4e00\u70b9\u70b9\u3002`);
+      }
+
+      selected = [];
+      start = null;
+      updateStats(0);
+    }
+
+    function loadLeaderboard() {
+      try {
+        return JSON.parse(localStorage.getItem(storeKey)) || [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveLeaderboard(list) {
+      localStorage.setItem(storeKey, JSON.stringify(list.slice(0, 10)));
+    }
+
+    function renderLeaderboard() {
+      const list = loadLeaderboard();
+      leaderboardEl.innerHTML = list.length
+        ? list.map((item) => `<li><strong>${escapeHtml(item.name)}</strong> ${item.score} \u5206</li>`).join("")
+        : `<li>${text.noScores}</li>`;
+    }
+
+    function escapeHtml(value) {
+      const span = document.createElement("span");
+      span.textContent = value;
+      return span.innerHTML;
+    }
+
+    board.addEventListener("pointerdown", (event) => {
+      if (gameOver) return;
+      const cell = pointToCell(event);
+      if (!cell || cell.cleared) return;
+      dragging = true;
+      start = { x: event.clientX, y: event.clientY, cell };
+      board.setPointerCapture(event.pointerId);
+      selectRectangle(cell);
+    });
+
+    board.addEventListener("pointermove", (event) => {
+      if (!dragging || gameOver) return;
+      drawSelection(event);
+      selectRectangle(pointToCell(event));
+    });
+
+    board.addEventListener("pointerup", finishSelection);
+    board.addEventListener("pointercancel", finishSelection);
+
+    document.querySelector("#newGame").addEventListener("click", startGame);
+    saveBtn.addEventListener("click", () => {
+      const name = nameInput.value.trim() || text.player;
+      const list = loadLeaderboard();
+      list.push({ name, score, at: Date.now() });
+      list.sort((a, b) => b.score - a.score || a.at - b.at);
+      saveLeaderboard(list);
+      renderLeaderboard();
+      saveBtn.disabled = true;
+      setMessage(text.saved, true);
+    });
+
+    startGame();
+    renderLeaderboard();
+  </script>
+</body>
+</html>
