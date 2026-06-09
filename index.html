@@ -287,7 +287,7 @@
     <aside class="side">
       <div>
         <h2>&#31215;&#20998;&#25490;&#34892;&#27036;</h2>
-        <p class="sub">&#25490;&#34892;&#27036;&#20174; GitHub Issues &#35835;&#21462;&#20844;&#24320;&#25104;&#32489;&#65292;&#25353;&#31215;&#20998;&#20174;&#39640;&#21040;&#20302;&#25490;&#24207;&#12290;</p>
+        <p class="sub">&#25490;&#34892;&#27036;&#20174; GitHub Issues &#35835;&#21462; [SCORE] &#25104;&#32489;&#65292;&#25353;&#31215;&#20998;&#20174;&#39640;&#21040;&#20302;&#25490;&#24207;&#12290;</p>
       </div>
       <input id="playerName" maxlength="12" placeholder="&#36755;&#20837;&#21517;&#23383;">
       <div class="actions">
@@ -317,7 +317,6 @@
     const saveBtn = document.querySelector("#saveScore");
     const repoOwner = "Cmeng228";
     const repoName = "ten-grid-game";
-    const scoreLabel = "score";
 
     let cells = [];
     let score = 0;
@@ -474,7 +473,7 @@
     }
 
     async function loadLeaderboard() {
-      const url = `https://api.github.com/repos/${repoOwner}/${repoName}/issues?state=open&labels=${scoreLabel}&per_page=100`;
+      const url = `https://api.github.com/repos/${repoOwner}/${repoName}/issues?state=open&per_page=100`;
       const response = await fetch(url, {
         headers: { "Accept": "application/vnd.github+json" }
       });
@@ -546,7 +545,7 @@
         `time_limit: ${gameSeconds}`,
         `submitted_at: ${new Date().toISOString()}`
       ].join("\\n");
-      const issueUrl = `https://github.com/${repoOwner}/${repoName}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}&labels=${encodeURIComponent(scoreLabel)}`;
+      const issueUrl = `https://github.com/${repoOwner}/${repoName}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
       window.open(issueUrl, "_blank", "noopener");
       saveBtn.disabled = true;
       setMessage(text.saved, true);
