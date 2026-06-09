@@ -344,6 +344,40 @@
       return Math.floor(Math.random() * 9) + 1;
     }
 
+    function makeTenGroup(size) {
+      const values = Array.from({ length: size }, () => 1);
+      let remaining = 10 - size;
+      while (remaining > 0) {
+        const index = Math.floor(Math.random() * size);
+        if (values[index] >= 9) continue;
+        values[index] += 1;
+        remaining -= 1;
+      }
+      return shuffle(values);
+    }
+
+    function shuffle(list) {
+      const copy = [...list];
+      for (let i = copy.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function generateBoardValues() {
+      const values = [];
+      while (values.length < rows * cols) {
+        const left = rows * cols - values.length;
+        const candidates = [2, 3, 4].filter((size) => size <= left && left - size !== 1);
+        const groupSize = left <= 4 && left !== 1
+          ? left
+          : candidates[Math.floor(Math.random() * candidates.length)];
+        values.push(...makeTenGroup(groupSize));
+      }
+      return values;
+    }
+
     function startGame() {
       clearInterval(timerId);
       score = 0;
@@ -354,11 +388,12 @@
       board.classList.remove("locked");
       saveBtn.disabled = false;
       timerStat.classList.remove("time-low");
+      const values = generateBoardValues();
       cells = Array.from({ length: rows * cols }, (_, index) => ({
         index,
         row: Math.floor(index / cols),
         col: index % cols,
-        value: randDigit(),
+        value: values[index] || randDigit(),
         cleared: false
       }));
       renderBoard();
