@@ -285,6 +285,12 @@
       color: var(--ink);
     }
 
+    li span {
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
     @media (max-width: 860px) {
       :root {
         --cell: clamp(13px, min(calc((100vw - 50px) / 10), calc((100dvh - 258px) / 16)), 31px);
@@ -815,11 +821,15 @@
         const visibleList = showAllLeaderboard ? leaderboard : leaderboard.slice(0, 3);
         toggleLeaderboardBtn.textContent = showAllLeaderboard ? "\u6536\u8d77" : "\u67e5\u770b\u5168\u90e8";
         leaderboardEl.innerHTML = visibleList.length
-          ? visibleList.map((item) => `<li><strong>${escapeHtml(item.name)}</strong> ${item.score} \u5206</li>`).join("")
+          ? visibleList.map((item) => `<li><strong>${escapeHtml(item.name)}</strong> ${item.score} \u5206 <span>${rankHours(item.at)} \u5c0f\u65f6</span></li>`).join("")
           : `<li>${text.noScores}</li>`;
       } catch {
         leaderboardEl.innerHTML = `<li>${text.loadFail}</li>`;
       }
+    }
+
+    function rankHours(timestamp) {
+      return Math.max(0, Math.floor((Date.now() - timestamp) / 3600000));
     }
 
     async function finishAndShowResult() {
