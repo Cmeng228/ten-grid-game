@@ -548,6 +548,7 @@
     let leaderboard = [];
     let showAllLeaderboard = false;
     let scoreSavedForRound = false;
+    let clearsThisRound = 0;
     let dragging = false;
     let start = null;
     let selected = [];
@@ -559,7 +560,8 @@
       over: "\u65f6\u95f4\u5230\uff01\u53ef\u4ee5\u9009\u62e9\u662f\u5426\u4e0a\u4f20\u6210\u7ee9\u3002",
       saved: "\u6210\u7ee9\u5df2\u4fdd\u5b58\uff0c\u6392\u884c\u699c\u5df2\u66f4\u65b0\u3002",
       skipped: "\u672c\u6b21\u6210\u7ee9\u672a\u4e0a\u4f20\u3002",
-      perfect: (seconds) => `\u5168\u90e8\u6d88\u9664\uff01\u5269\u4f59 ${seconds} \u79d2\uff0c+${seconds} \u5206\u3002`,
+      boardClear: "\u5168\u6e05\uff01\u68cb\u76d8\u5df2\u5237\u65b0\uff0c\u65f6\u95f4\u7ee7\u7eed\u3002",
+      perfect: (seconds) => `\u518d\u6b21\u5168\u6e05\uff01\u5269\u4f59 ${seconds} \u79d2\uff0c+${seconds} \u5206\u3002`,
       player: "\u73a9\u5bb6",
       noScores: "\u8fd8\u6ca1\u6709\u516c\u5f00\u6210\u7ee9",
       loading: "\u6b63\u5728\u8bfb\u53d6\u4e91\u7aef\u6392\u884c\u699c...",
@@ -626,6 +628,7 @@
       gameOver = false;
       gameStarted = true;
       scoreSavedForRound = false;
+      clearsThisRound = 0;
       selected = [];
       start = null;
       endModal.classList.remove("open");
@@ -664,6 +667,17 @@
 
     async function completeGame() {
       if (gameOver) return;
+      clearsThisRound += 1;
+      if (clearsThisRound === 1) {
+        selected = [];
+        start = null;
+        buildCells();
+        renderBoard();
+        updateStats(0);
+        setMessage(text.boardClear, true);
+        return;
+      }
+
       clearInterval(timerId);
       const bonus = Math.max(0, timeLeft);
       score += bonus;
@@ -755,14 +769,18 @@
           el.classList.add("cleared");
           el.textContent = "";
         });
-        score += selected.length;
+        const clearedCount = selected.length;
+        const scoreGain = clearedCount + Math.max(0, clearedCount - 2);
+        const timeGain = Math.floor(clearedCount / 2);
+        score += scoreGain;
+        timeLeft += timeGain;
         if (cells.every((cell) => cell.cleared)) {
           selected = [];
           start = null;
           await completeGame();
           return;
         }
-        setMessage(`\u6210\u529f\u6d88\u9664 ${selected.length} \u683c\uff0c+${selected.length} \u5206\u3002`, true);
+        setMessage(`\u6d88\u9664 ${clearedCount} \u683c\uff0c+${scoreGain} \u5206\uff0c+${timeGain} \u79d2\u3002`, true);
       } else if (selected.length) {
         document.querySelectorAll(".cell.selected").forEach((el) => el.classList.remove("selected"));
         setMessage(`\u8fd9\u6b21\u603b\u548c\u662f ${sum}\uff0c\u8fd8\u5dee\u4e00\u70b9\u70b9\u3002`);
