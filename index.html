@@ -553,6 +553,7 @@
       over: "\u65f6\u95f4\u5230\uff01\u53ef\u4ee5\u9009\u62e9\u662f\u5426\u4e0a\u4f20\u6210\u7ee9\u3002",
       saved: "\u6210\u7ee9\u5df2\u4fdd\u5b58\uff0c\u6392\u884c\u699c\u5df2\u66f4\u65b0\u3002",
       skipped: "\u672c\u6b21\u6210\u7ee9\u672a\u4e0a\u4f20\u3002",
+      perfect: (seconds) => `\u5168\u90e8\u6d88\u9664\uff01\u5269\u4f59 ${seconds} \u79d2\uff0c+${seconds} \u5206\u3002`,
       player: "\u73a9\u5bb6",
       noScores: "\u8fd8\u6ca1\u6709\u516c\u5f00\u6210\u7ee9",
       loading: "\u6b63\u5728\u8bfb\u53d6\u4e91\u7aef\u6392\u884c\u699c...",
@@ -655,6 +656,22 @@
       await finishAndShowResult();
     }
 
+    async function completeGame() {
+      if (gameOver) return;
+      clearInterval(timerId);
+      const bonus = Math.max(0, timeLeft);
+      score += bonus;
+      gameOver = true;
+      gameStarted = false;
+      dragging = false;
+      box.style.display = "none";
+      document.querySelectorAll(".cell.selected").forEach((el) => el.classList.remove("selected"));
+      board.classList.add("locked");
+      updateStats(0);
+      setMessage(text.perfect(bonus), true);
+      await finishAndShowResult();
+    }
+
     function renderBoard() {
       board.innerHTML = "";
       cells.forEach((cell) => {
@@ -718,7 +735,7 @@
       updateStats(selected.reduce((total, cell) => total + cell.value, 0));
     }
 
-    function finishSelection() {
+    async function finishSelection() {
       if (!dragging) return;
       dragging = false;
       box.style.display = "none";
@@ -733,6 +750,12 @@
           el.textContent = "";
         });
         score += selected.length;
+        if (cells.every((cell) => cell.cleared)) {
+          selected = [];
+          start = null;
+          await completeGame();
+          return;
+        }
         setMessage(`\u6210\u529f\u6d88\u9664 ${selected.length} \u683c\uff0c+${selected.length} \u5206\u3002`, true);
       } else if (selected.length) {
         document.querySelectorAll(".cell.selected").forEach((el) => el.classList.remove("selected"));
