@@ -722,17 +722,14 @@
       return cells[Number(cellEl.dataset.index)];
     }
 
-    function pointToGrid(event) {
+    function pointInBoard(event) {
       const rect = board.getBoundingClientRect();
-      const gap = parseFloat(getComputedStyle(board).gap) || 0;
-      const cellWidth = board.children[0].getBoundingClientRect().width;
-      const cellHeight = board.children[0].getBoundingClientRect().height;
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-      const col = Math.max(0, Math.min(cols - 1, Math.floor(x / (cellWidth + gap))));
-      const row = Math.max(0, Math.min(rows - 1, Math.floor(y / (cellHeight + gap))));
-      if (x < 0 || y < 0 || x > rect.width || y > rect.height) return null;
-      return { row, col };
+      return (
+        event.clientX >= rect.left &&
+        event.clientX <= rect.right &&
+        event.clientY >= rect.top &&
+        event.clientY <= rect.bottom
+      );
     }
 
     function drawSelection(event) {
@@ -748,20 +745,18 @@
       box.style.height = `${Math.max(4, y2 - y1)}px`;
     }
 
-    function selectRectangle(endPoint) {
-      if (!start || !endPoint) return;
-      const minRow = Math.min(start.grid.row, endPoint.row);
-      const maxRow = Math.max(start.grid.row, endPoint.row);
-      const minCol = Math.min(start.grid.col, endPoint.col);
-      const maxCol = Math.max(start.grid.col, endPoint.col);
+    function selectByBox(event) {
+      if (!start) return;
+      const left = Math.min(start.x, event.clientX);
+      const right = Math.max(start.x, event.clientX);
+      const top = Math.min(start.y, event.clientY);
+      const bottom = Math.max(start.y, event.clientY);
 
-      selected = cells.filter((cell) =>
-        !cell.cleared &&
-        cell.row >= minRow &&
-        cell.row <= maxRow &&
-        cell.col >= minCol &&
-        cell.col <= maxCol
-      );
+      selected = cells.filter((cell) => {
+        if (cell.cleared) return false;
+        const rect = board.children[cell.index].getBoundingClientRect();
+        return rect.left < right && rect.right > left && rect.top < bottom && rect.bottom > top;
+      });
 
       document.querySelectorAll(".cell.selected").forEach((el) => el.classList.remove("selected"));
       selected.forEach((cell) => board.children[cell.index].classList.add("selected"));
@@ -881,18 +876,17 @@
 
     board.addEventListener("pointerdown", (event) => {
       if (gameOver || !gameStarted) return;
-      const grid = pointToGrid(event);
-      if (!grid) return;
+      if (!pointInBoard(event)) return;
       dragging = true;
-      start = { x: event.clientX, y: event.clientY, grid };
+      start = { x: event.clientX, y: event.clientY };
       board.setPointerCapture(event.pointerId);
-      selectRectangle(grid);
+      selectByBox(event);
     });
 
     board.addEventListener("pointermove", (event) => {
       if (!dragging || gameOver) return;
       drawSelection(event);
-      selectRectangle(pointToGrid(event));
+      selectByBox(event);
     });
 
     board.addEventListener("pointerup", finishSelection);
