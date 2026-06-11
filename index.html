@@ -257,6 +257,14 @@
       gap: 8px;
     }
 
+    .leaderboard-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      min-width: 0;
+    }
+
     .link-button {
       min-height: 32px;
       padding: 0 10px;
@@ -288,6 +296,40 @@
     li span {
       color: var(--muted);
       font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .top-ranks {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .rank-card {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #fffaf0;
+      padding: 6px;
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.2;
+    }
+
+    .rank-name {
+      display: block;
+      overflow-x: auto;
+      white-space: nowrap;
+      color: var(--ink);
+      font-weight: 800;
+      scrollbar-width: thin;
+    }
+
+    .rank-score {
+      display: block;
+      margin-top: 3px;
       white-space: nowrap;
     }
 
@@ -373,22 +415,26 @@
 
       .leaderboard-head {
         order: 2;
-        display: flex;
-        min-height: 22px;
+        display: block;
+        min-height: 0;
+      }
+
+      .leaderboard-row {
+        grid-template-columns: minmax(0, 1fr) 74px;
+        gap: 5px;
+      }
+
+      .top-ranks {
+        gap: 3px;
+      }
+
+      .rank-card {
+        padding: 4px;
+        font-size: 10px;
       }
 
       ol {
-        order: 2;
-        display: grid;
-        max-height: 62px;
-        padding-left: 24px;
-        gap: 2px;
-        font-size: 11px;
-        overflow: auto;
-      }
-
-      li {
-        padding: 3px 0;
+        max-height: 55vh;
       }
 
       button,
@@ -460,6 +506,16 @@
       grid-template-columns: 1fr 1fr;
       gap: 8px;
     }
+
+    .leaderboard-dialog {
+      max-height: min(76vh, 620px);
+      overflow: hidden;
+    }
+
+    .leaderboard-dialog ol {
+      max-height: 54vh;
+      overflow: auto;
+    }
   </style>
 </head>
 <body>
@@ -493,10 +549,11 @@
       </div>
       <div class="message" id="message">&#36755;&#20837;&#21517;&#23383;&#24320;&#22987;&#28216;&#25103;&#65292;&#38656;&#35201;&#26694;&#36873;&#25968;&#23383;&#65292;&#35753;&#20182;&#20204;&#30340;&#24635;&#21644;&#31561;&#20110;10&#12290;</div>
       <div class="leaderboard-head">
-        <span class="label">&#21069;&#19977;&#21517;</span>
+        <div class="leaderboard-row">
+          <div class="top-ranks" id="topRanks"></div>
         <button id="toggleLeaderboard" class="link-button">&#26597;&#30475;&#20840;&#37096;</button>
+        </div>
       </div>
-      <ol id="leaderboard"></ol>
     </aside>
   </main>
 
@@ -509,6 +566,14 @@
         <button id="uploadScore">&#19978;&#20256;&#25104;&#32489;</button>
         <button id="skipUpload" class="secondary">&#19981;&#19978;&#20256;</button>
       </div>
+    </div>
+  </div>
+
+  <div class="modal" id="leaderboardModal" role="dialog" aria-modal="true" aria-labelledby="leaderboardTitle">
+    <div class="dialog leaderboard-dialog">
+      <h3 id="leaderboardTitle">&#20840;&#37096;&#25490;&#34892;</h3>
+      <ol id="leaderboard"></ol>
+      <button id="closeLeaderboard" class="secondary">&#20851;&#38381;</button>
     </div>
   </div>
 
@@ -526,9 +591,12 @@
     const sumEl = document.querySelector("#sum");
     const msg = document.querySelector("#message");
     const leaderboardEl = document.querySelector("#leaderboard");
+    const topRanksEl = document.querySelector("#topRanks");
     const nameInput = document.querySelector("#playerName");
     const startBtn = document.querySelector("#startGame");
     const toggleLeaderboardBtn = document.querySelector("#toggleLeaderboard");
+    const leaderboardModal = document.querySelector("#leaderboardModal");
+    const closeLeaderboardBtn = document.querySelector("#closeLeaderboard");
     const endModal = document.querySelector("#endModal");
     const finalScoreEl = document.querySelector("#finalScore");
     const endMessageEl = document.querySelector("#endMessage");
@@ -546,7 +614,6 @@
     let gameStarted = false;
     let playerName = "";
     let leaderboard = [];
-    let showAllLeaderboard = false;
     let scoreSavedForRound = false;
     let clearsThisRound = 0;
     let dragging = false;
@@ -838,20 +905,28 @@
 
     async function renderLeaderboard() {
       if (!hasSupabaseConfig()) {
+        topRanksEl.innerHTML = `<div class="rank-card">${text.configMissing}</div>`;
         leaderboardEl.innerHTML = `<li>${text.configMissing}</li>`;
         return;
       }
+      topRanksEl.innerHTML = `<div class="rank-card">${text.loading}</div>`;
       leaderboardEl.innerHTML = `<li>${text.loading}</li>`;
       try {
         leaderboard = await loadLeaderboard();
-        const visibleList = showAllLeaderboard ? leaderboard : leaderboard.slice(0, 3);
-        toggleLeaderboardBtn.textContent = showAllLeaderboard ? "\u6536\u8d77" : "\u67e5\u770b\u5168\u90e8";
-        leaderboardEl.innerHTML = visibleList.length
-          ? visibleList.map((item) => `<li><strong>${escapeHtml(item.name)}</strong> ${item.score} \u5206 <span>${rankHours(item.at)} \u5c0f\u65f6</span></li>`).join("")
+        topRanksEl.innerHTML = leaderboard.length
+          ? leaderboard.slice(0, 3).map((item, index) => rankCard(item, index)).join("")
+          : `<div class="rank-card">${text.noScores}</div>`;
+        leaderboardEl.innerHTML = leaderboard.length
+          ? leaderboard.map((item) => `<li><strong>${escapeHtml(item.name)}</strong> ${item.score} \u5206 <span>${rankHours(item.at)} \u5c0f\u65f6</span></li>`).join("")
           : `<li>${text.noScores}</li>`;
       } catch {
+        topRanksEl.innerHTML = `<div class="rank-card">${text.loadFail}</div>`;
         leaderboardEl.innerHTML = `<li>${text.loadFail}</li>`;
       }
+    }
+
+    function rankCard(item, index) {
+      return `<div class="rank-card"><span class="rank-name">${index + 1}. ${escapeHtml(item.name)}</span><span class="rank-score">${item.score} \u5206 ${rankHours(item.at)} \u5c0f\u65f6</span></div>`;
     }
 
     function rankHours(timestamp) {
@@ -931,8 +1006,10 @@
       setMessage(text.skipped);
     });
     toggleLeaderboardBtn.addEventListener("click", () => {
-      showAllLeaderboard = !showAllLeaderboard;
-      renderLeaderboard();
+      leaderboardModal.classList.add("open");
+    });
+    closeLeaderboardBtn.addEventListener("click", () => {
+      leaderboardModal.classList.remove("open");
     });
 
     board.classList.add("locked");
