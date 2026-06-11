@@ -722,6 +722,19 @@
       return cells[Number(cellEl.dataset.index)];
     }
 
+    function pointToGrid(event) {
+      const rect = board.getBoundingClientRect();
+      const gap = parseFloat(getComputedStyle(board).gap) || 0;
+      const cellWidth = board.children[0].getBoundingClientRect().width;
+      const cellHeight = board.children[0].getBoundingClientRect().height;
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      const col = Math.max(0, Math.min(cols - 1, Math.floor(x / (cellWidth + gap))));
+      const row = Math.max(0, Math.min(rows - 1, Math.floor(y / (cellHeight + gap))));
+      if (x < 0 || y < 0 || x > rect.width || y > rect.height) return null;
+      return { row, col };
+    }
+
     function drawSelection(event) {
       const wrapRect = boardWrap.getBoundingClientRect();
       const x1 = Math.min(start.x, event.clientX) - wrapRect.left;
@@ -735,12 +748,12 @@
       box.style.height = `${Math.max(4, y2 - y1)}px`;
     }
 
-    function selectRectangle(endCell) {
-      if (!start || !endCell) return;
-      const minRow = Math.min(start.cell.row, endCell.row);
-      const maxRow = Math.max(start.cell.row, endCell.row);
-      const minCol = Math.min(start.cell.col, endCell.col);
-      const maxCol = Math.max(start.cell.col, endCell.col);
+    function selectRectangle(endPoint) {
+      if (!start || !endPoint) return;
+      const minRow = Math.min(start.grid.row, endPoint.row);
+      const maxRow = Math.max(start.grid.row, endPoint.row);
+      const minCol = Math.min(start.grid.col, endPoint.col);
+      const maxCol = Math.max(start.grid.col, endPoint.col);
 
       selected = cells.filter((cell) =>
         !cell.cleared &&
@@ -868,18 +881,18 @@
 
     board.addEventListener("pointerdown", (event) => {
       if (gameOver || !gameStarted) return;
-      const cell = pointToCell(event);
-      if (!cell || cell.cleared) return;
+      const grid = pointToGrid(event);
+      if (!grid) return;
       dragging = true;
-      start = { x: event.clientX, y: event.clientY, cell };
+      start = { x: event.clientX, y: event.clientY, grid };
       board.setPointerCapture(event.pointerId);
-      selectRectangle(cell);
+      selectRectangle(grid);
     });
 
     board.addEventListener("pointermove", (event) => {
       if (!dragging || gameOver) return;
       drawSelection(event);
-      selectRectangle(pointToCell(event));
+      selectRectangle(pointToGrid(event));
     });
 
     board.addEventListener("pointerup", finishSelection);
