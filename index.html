@@ -182,6 +182,11 @@
       gap: 8px;
     }
 
+    .player-panel.has-rules {
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      align-items: center;
+    }
+
     .actions {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -402,7 +407,7 @@
 
       .player-panel {
         order: 1;
-        grid-template-columns: minmax(0, 1fr) 112px;
+        grid-template-columns: minmax(0, 1fr) 52px 92px;
         align-items: center;
       }
 
@@ -516,6 +521,14 @@
       max-height: 54vh;
       overflow: auto;
     }
+
+    .rules-list {
+      margin: 0;
+      padding-left: 20px;
+      display: grid;
+      gap: 8px;
+      color: var(--muted);
+    }
   </style>
 </head>
 <body>
@@ -543,8 +556,9 @@
         <h2>&#31215;&#20998;&#25490;&#34892;&#27036;</h2>
         <p class="sub">&#25490;&#34892;&#27036;&#20174; Supabase &#20113;&#31471;&#25968;&#25454;&#24211;&#35835;&#21462;&#12290;</p>
       </div>
-      <div class="player-panel">
+      <div class="player-panel has-rules">
         <input id="playerName" maxlength="7" required placeholder="&#36755;&#20837;&#21517;&#23383;">
+        <button id="rulesButton" class="secondary">&#35268;&#21017;</button>
         <button id="startGame">&#24320;&#22987;&#28216;&#25103;</button>
       </div>
       <div class="message" id="message">&#36755;&#20837;&#21517;&#23383;&#24320;&#22987;&#28216;&#25103;&#65292;&#38656;&#35201;&#26694;&#36873;&#25968;&#23383;&#65292;&#35753;&#20182;&#20204;&#30340;&#24635;&#21644;&#31561;&#20110;10&#12290;</div>
@@ -577,6 +591,21 @@
     </div>
   </div>
 
+  <div class="modal" id="rulesModal" role="dialog" aria-modal="true" aria-labelledby="rulesTitle">
+    <div class="dialog">
+      <h3 id="rulesTitle">&#28216;&#25103;&#35268;&#21017;</h3>
+      <ul class="rules-list">
+        <li>&#36755;&#20837;&#21517;&#23383;&#21518;&#28857;&#20987;&#24320;&#22987;&#28216;&#25103;&#65292;120 &#31186;&#20498;&#35745;&#26102;&#12290;</li>
+        <li>&#25302;&#25341;&#26694;&#36873;&#25968;&#23383;&#65292;&#26694;&#20869;&#25968;&#23383;&#24635;&#21644;&#31561;&#20110; 10 &#21363;&#21487;&#28040;&#38500;&#12290;</li>
+        <li>&#24471;&#20998; = &#28040;&#38500;&#26684;&#23376;&#25968; × 2 + max(0, &#28040;&#38500;&#26684;&#23376;&#25968; - 2) × 3&#12290;</li>
+        <li>&#27599;&#28040;&#38500; 2 &#20010;&#26684;&#23376; +1 &#31186;&#65292;3 &#26684;&#20063; +1 &#31186;&#65292;4 &#26684; +2 &#31186;&#65292;&#20197;&#27492;&#31867;&#25512;&#12290;</li>
+        <li>&#27599;&#27425;&#20840;&#28165;&#26827;&#30424; +100 &#20998;&#65292;&#26827;&#30424;&#21047;&#26032;&#65292;&#26102;&#38388;&#32487;&#32493;&#12290;</li>
+        <li>&#26102;&#38388;&#24402;&#38646;&#21518;&#32467;&#31639;&#65292;&#21487;&#36873;&#25321;&#26159;&#21542;&#19978;&#20256;&#25104;&#32489;&#12290;</li>
+      </ul>
+      <button id="closeRules" class="secondary">&#30693;&#36947;&#20102;</button>
+    </div>
+  </div>
+
   <script>
     const rows = 16;
     const cols = 10;
@@ -593,10 +622,13 @@
     const leaderboardEl = document.querySelector("#leaderboard");
     const topRanksEl = document.querySelector("#topRanks");
     const nameInput = document.querySelector("#playerName");
+    const rulesButton = document.querySelector("#rulesButton");
     const startBtn = document.querySelector("#startGame");
     const toggleLeaderboardBtn = document.querySelector("#toggleLeaderboard");
     const leaderboardModal = document.querySelector("#leaderboardModal");
     const closeLeaderboardBtn = document.querySelector("#closeLeaderboard");
+    const rulesModal = document.querySelector("#rulesModal");
+    const closeRulesBtn = document.querySelector("#closeRules");
     const endModal = document.querySelector("#endModal");
     const finalScoreEl = document.querySelector("#finalScore");
     const endMessageEl = document.querySelector("#endMessage");
@@ -996,6 +1028,12 @@
     });
     closeLeaderboardBtn.addEventListener("click", () => {
       leaderboardModal.classList.remove("open");
+    });
+    rulesButton.addEventListener("click", () => {
+      rulesModal.classList.add("open");
+    });
+    closeRulesBtn.addEventListener("click", () => {
+      rulesModal.classList.remove("open");
     });
 
     board.classList.add("locked");
