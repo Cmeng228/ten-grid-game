@@ -183,7 +183,7 @@
     }
 
     .player-panel.has-rules {
-      grid-template-columns: minmax(0, 1fr) auto auto;
+      grid-template-columns: minmax(0, 1fr) auto auto auto;
       align-items: center;
     }
 
@@ -407,7 +407,7 @@
 
       .player-panel {
         order: 1;
-        grid-template-columns: minmax(0, 1fr) 52px 92px;
+        grid-template-columns: minmax(0, 1fr) 44px 44px 84px;
         align-items: center;
       }
 
@@ -559,6 +559,7 @@
       <div class="player-panel has-rules">
         <input id="playerName" maxlength="7" required placeholder="&#36755;&#20837;&#21517;&#23383;">
         <button id="rulesButton" class="secondary">&#35268;&#21017;</button>
+        <button id="pauseGame" class="secondary" disabled>&#26242;&#20572;</button>
         <button id="startGame">&#24320;&#22987;&#28216;&#25103;</button>
       </div>
       <div class="message" id="message">&#36755;&#20837;&#21517;&#23383;&#24320;&#22987;&#28216;&#25103;&#65292;&#38656;&#35201;&#26694;&#36873;&#25968;&#23383;&#65292;&#35753;&#20182;&#20204;&#30340;&#24635;&#21644;&#31561;&#20110;10&#12290;</div>
@@ -606,6 +607,14 @@
     </div>
   </div>
 
+  <div class="modal" id="pauseModal" role="dialog" aria-modal="true" aria-labelledby="pauseTitle">
+    <div class="dialog">
+      <h3 id="pauseTitle">&#28216;&#25103;&#24050;&#26242;&#20572;</h3>
+      <p>&#26827;&#30424;&#24050;&#38544;&#34255;&#65292;&#32487;&#32493;&#21518;&#24674;&#22797;&#35745;&#26102;&#12290;</p>
+      <button id="resumeGame">&#32487;&#32493;&#28216;&#25103;</button>
+    </div>
+  </div>
+
   <script>
     const rows = 16;
     const cols = 10;
@@ -623,12 +632,15 @@
     const topRanksEl = document.querySelector("#topRanks");
     const nameInput = document.querySelector("#playerName");
     const rulesButton = document.querySelector("#rulesButton");
+    const pauseBtn = document.querySelector("#pauseGame");
     const startBtn = document.querySelector("#startGame");
     const toggleLeaderboardBtn = document.querySelector("#toggleLeaderboard");
     const leaderboardModal = document.querySelector("#leaderboardModal");
     const closeLeaderboardBtn = document.querySelector("#closeLeaderboard");
     const rulesModal = document.querySelector("#rulesModal");
     const closeRulesBtn = document.querySelector("#closeRules");
+    const pauseModal = document.querySelector("#pauseModal");
+    const resumeGameBtn = document.querySelector("#resumeGame");
     const endModal = document.querySelector("#endModal");
     const finalScoreEl = document.querySelector("#finalScore");
     const endMessageEl = document.querySelector("#endMessage");
@@ -644,6 +656,7 @@
     let timerId = null;
     let gameOver = false;
     let gameStarted = false;
+    let isPaused = false;
     let playerName = "";
     let leaderboard = [];
     let scoreSavedForRound = false;
@@ -725,12 +738,15 @@
       timeLeft = gameSeconds;
       gameOver = false;
       gameStarted = true;
+      isPaused = false;
       scoreSavedForRound = false;
       clearsThisRound = 0;
       selected = [];
       start = null;
       endModal.classList.remove("open");
+      pauseModal.classList.remove("open");
       nameInput.disabled = true;
+      pauseBtn.disabled = false;
       startBtn.textContent = "\u91cd\u65b0\u5f00\u59cb";
       board.classList.remove("locked");
       timerStat.classList.remove("time-low");
@@ -754,7 +770,9 @@
       timeLeft = 0;
       gameOver = true;
       gameStarted = false;
+      isPaused = false;
       dragging = false;
+      pauseBtn.disabled = true;
       box.style.display = "none";
       document.querySelectorAll(".cell.selected").forEach((el) => el.classList.remove("selected"));
       board.classList.add("locked");
@@ -968,7 +986,7 @@
     }
 
     board.addEventListener("pointerdown", (event) => {
-      if (gameOver || !gameStarted) return;
+      if (gameOver || !gameStarted || isPaused) return;
       if (!pointInBoard(event)) return;
       dragging = true;
       start = { x: event.clientX, y: event.clientY };
@@ -977,7 +995,7 @@
     });
 
     board.addEventListener("pointermove", (event) => {
-      if (!dragging || gameOver) return;
+      if (!dragging || gameOver || isPaused) return;
       drawSelection(event);
       selectByBox(event);
     });
@@ -1011,6 +1029,7 @@
         await renderLeaderboard();
         endModal.classList.remove("open");
         nameInput.disabled = false;
+        pauseBtn.disabled = true;
         setMessage(text.saved, true);
       } catch {
         uploadScoreBtn.disabled = false;
@@ -1021,6 +1040,7 @@
     skipUploadBtn.addEventListener("click", () => {
       endModal.classList.remove("open");
       nameInput.disabled = false;
+      pauseBtn.disabled = true;
       setMessage(text.skipped);
     });
     toggleLeaderboardBtn.addEventListener("click", () => {
@@ -1034,6 +1054,22 @@
     });
     closeRulesBtn.addEventListener("click", () => {
       rulesModal.classList.remove("open");
+    });
+    pauseBtn.addEventListener("click", () => {
+      if (!gameStarted || gameOver || isPaused) return;
+      isPaused = true;
+      dragging = false;
+      clearInterval(timerId);
+      box.style.display = "none";
+      board.classList.add("locked");
+      pauseModal.classList.add("open");
+    });
+    resumeGameBtn.addEventListener("click", () => {
+      if (!gameStarted || gameOver || !isPaused) return;
+      isPaused = false;
+      board.classList.remove("locked");
+      pauseModal.classList.remove("open");
+      timerId = setInterval(tickTimer, 1000);
     });
 
     board.classList.add("locked");
